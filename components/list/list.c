@@ -139,8 +139,72 @@ list_status_t list_pop_back(list_t *p_list)
 	{
 		p_list->p_head = NULL;
 	}
-
+	printf("%s %d\n", __func__, *((int*)p_entry->data));
 	mem_free(p_entry);
 	p_list->size--;
 	return LIST_STATUS_SUCCESS;
+}
+
+list_status_t list_remove_if(list_t *p_list, void *p_remove, predicate_func_t predicate)
+{
+	if (NULL == p_list || NULL == predicate)
+	{
+		return LIST_STATUS_INVALID_PARAM;
+	}
+
+	list_node_t *p_entry = p_list->p_head;
+	list_node_t *p_prev  = NULL;
+
+	while (p_entry)
+	{
+		if (predicate(p_entry->data, p_remove))
+		{
+			if (p_prev)
+			{
+				p_prev->p_next = p_entry->p_next;
+			}
+			else
+			{
+				p_list->p_head = p_entry->p_next;
+			}
+			mem_free(p_entry);
+			p_list->size--;
+			return LIST_STATUS_SUCCESS;
+		}
+		p_prev  = p_entry;
+		p_entry = p_entry->p_next;
+	}
+	return LIST_STATUS_NOT_FOUND;
+}
+
+list_status_t list_remove(list_t *p_list, void *p_remove)
+{
+	if (NULL == p_list || NULL == p_remove)
+	{
+		return LIST_STATUS_INVALID_PARAM;
+	}
+
+	list_node_t  *p_entry = p_list->p_head;
+	list_node_t *p_prev  = NULL;
+
+	while (p_entry)
+	{
+		if (p_entry == p_remove)
+		{
+			if (p_prev)
+			{
+				p_prev->p_next = p_entry->p_next;
+			}
+			else
+			{
+				p_list->p_head = p_entry->p_next;
+			}
+			mem_free(p_entry);
+			p_list->size--;
+			return LIST_STATUS_SUCCESS;
+		}
+		p_prev  = p_entry;
+		p_entry = p_entry->p_next;
+	}
+	return LIST_STATUS_NOT_FOUND;
 }

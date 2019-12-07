@@ -2,6 +2,7 @@
 #define LIST_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define LIST_STATUS_BASE                (40)
 
@@ -29,6 +30,8 @@ typedef struct
     list_node_t *p_mem_pool;
 } list_t;
 
+typedef bool (*predicate_func_t)(void *p_iter, void *p_remove);
+
 #define LIST_INSTANCE(_list_name, _el_size, _el_max_num)                                    \
     static uint8_t  _list_name##_mem_pool[(_el_size + sizeof(list_node_t)) * _el_max_num];  \
     static list_t   _list_name  = {                                                         \
@@ -38,7 +41,7 @@ typedef struct
         .p_mem_pool      = (list_node_t*)&(_list_name##_mem_pool)};
 
 #define FOREACH(_list, _iter)                                                   \
-for (list_node_t *_iter = _list->p_head; _iter != NULL; _iter = _iter->p_next)
+for (list_node_t *_iter = (_list)->p_head; _iter != NULL; _iter = _iter->p_next)
 
 void* list_front(list_t *p_list);
 void* list_back(list_t *p_list);
@@ -47,5 +50,7 @@ list_status_t list_push_front(list_t *p_list, void *p_data);
 list_status_t list_push_back(list_t *p_list, void *p_data);
 list_status_t list_pop_front(list_t *p_list);
 list_status_t list_pop_back(list_t *p_list);
+list_status_t list_remove_if(list_t *p_list, void *p_remove, predicate_func_t predicate);
+list_status_t list_remove(list_t *p_list, void *p_remove);
 
 #endif /* FIFO_H__ */
