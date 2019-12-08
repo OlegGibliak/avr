@@ -9,7 +9,7 @@ void assert_callback(uint16_t line, const char *func_name)
 {
     __LOG(LOG_LEVEL_ERROR, "assert: %s: %u\r\n", func_name, line);
     cli();
-    while(0)
+    while(1)
     {
     	LED_DEBUG_TOOGLE();
     	_delay_ms(100);

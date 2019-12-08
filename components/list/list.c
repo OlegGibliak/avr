@@ -52,30 +52,30 @@ void* list_back(list_t *p_list)
     return p_last;
 }
 
-list_status_t list_push_front(list_t *p_list, void *p_data)
+error_t list_push_front(list_t *p_list, void *p_data)
 {
 	if (NULL == p_list || NULL == p_data)
-		return LIST_STATUS_INVALID_PARAM;
+		return ERROR_INVALID_PARAM;
 
 	list_node_t *p_new = mem_alloc(p_list);
 	if (NULL == p_new)
-		return LIST_STATUS_NO_MEM;
+		return ERROR_NO_MEM;
 
 	memcpy(p_new->data, p_data, p_list->element_size);
 	p_new->p_next      = p_list->p_head;
 	p_list->p_head     = p_new;
 	p_list->size++;
-	return LIST_STATUS_SUCCESS;
+	return ERROR_SUCCESS;
 }
 
-list_status_t list_push_back(list_t *p_list, void *p_data)
+error_t list_push_back(list_t *p_list, void *p_data)
 {
 	if (NULL == p_list || NULL == p_data)
-		return LIST_STATUS_INVALID_PARAM;
+		return ERROR_INVALID_PARAM;
 
 	list_node_t *p_new = mem_alloc(p_list);
 	if (NULL == p_new)
-		return LIST_STATUS_NO_MEM;
+		return ERROR_NO_MEM;
 
 	memcpy(p_new->data, p_data, p_list->element_size);
 
@@ -94,32 +94,32 @@ list_status_t list_push_back(list_t *p_list, void *p_data)
 		p_list->p_head = p_new;
 	}
 	p_list->size++;
-	return LIST_STATUS_SUCCESS;
+	return ERROR_SUCCESS;
 }
 
-list_status_t list_pop_front(list_t *p_list)
+error_t list_pop_front(list_t *p_list)
 {
 	if (NULL == p_list)
-		return LIST_STATUS_INVALID_PARAM;
+		return ERROR_INVALID_PARAM;
 
 	if (NULL == p_list->p_head)
-		return LIST_STATUS_SUCCESS;
+		return ERROR_SUCCESS;
 
 	list_node_t *p_remove = p_list->p_head;
 	p_list->p_head        = p_list->p_head->p_next;
 	mem_free(p_remove);
 	p_list->size--;
-	return LIST_STATUS_SUCCESS;
+	return ERROR_SUCCESS;
 }
 
-list_status_t list_pop_back(list_t *p_list)
+error_t list_pop_back(list_t *p_list)
 {
 	if (NULL == p_list)
-		return LIST_STATUS_INVALID_PARAM;
+		return ERROR_INVALID_PARAM;
 
 	if (NULL == p_list->p_head)
 	{
-		return LIST_STATUS_SUCCESS;
+		return ERROR_SUCCESS;
 	}
 
 	list_node_t *p_entry = p_list->p_head;
@@ -139,17 +139,16 @@ list_status_t list_pop_back(list_t *p_list)
 	{
 		p_list->p_head = NULL;
 	}
-	printf("%s %d\n", __func__, *((int*)p_entry->data));
 	mem_free(p_entry);
 	p_list->size--;
-	return LIST_STATUS_SUCCESS;
+	return ERROR_SUCCESS;
 }
 
-list_status_t list_remove_if(list_t *p_list, void *p_remove, predicate_func_t predicate)
+error_t list_remove_if(list_t *p_list, void *p_remove, predicate_func_t predicate)
 {
 	if (NULL == p_list || NULL == predicate)
 	{
-		return LIST_STATUS_INVALID_PARAM;
+		return ERROR_INVALID_PARAM;
 	}
 
 	list_node_t *p_entry = p_list->p_head;
@@ -169,19 +168,19 @@ list_status_t list_remove_if(list_t *p_list, void *p_remove, predicate_func_t pr
 			}
 			mem_free(p_entry);
 			p_list->size--;
-			return LIST_STATUS_SUCCESS;
+			return ERROR_SUCCESS;
 		}
 		p_prev  = p_entry;
 		p_entry = p_entry->p_next;
 	}
-	return LIST_STATUS_NOT_FOUND;
+	return ERROR_NOT_FOUND;
 }
 
-list_status_t list_remove(list_t *p_list, void *p_remove)
+error_t list_remove(list_t *p_list, void *p_remove)
 {
 	if (NULL == p_list || NULL == p_remove)
 	{
-		return LIST_STATUS_INVALID_PARAM;
+		return ERROR_INVALID_PARAM;
 	}
 
 	list_node_t  *p_entry = p_list->p_head;
@@ -201,10 +200,15 @@ list_status_t list_remove(list_t *p_list, void *p_remove)
 			}
 			mem_free(p_entry);
 			p_list->size--;
-			return LIST_STATUS_SUCCESS;
+			return ERROR_SUCCESS;
 		}
 		p_prev  = p_entry;
 		p_entry = p_entry->p_next;
 	}
-	return LIST_STATUS_NOT_FOUND;
+	return ERROR_NOT_FOUND;
+}
+
+void* list_item_data_get(list_node_t *p_item)
+{
+	return (void*)p_item->data;
 }

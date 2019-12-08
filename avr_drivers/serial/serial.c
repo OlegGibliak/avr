@@ -65,9 +65,7 @@ void serial_init(void)
     UCSR0B = (1<<RXEN0) | (1<<TXEN0) | (1<<RXCIE0) | (1<<TXCIE0);
     /** Set frame format: 8data, 1stop bit */
     UCSR0C = (1<<UCSZ01) | (1<<UCSZ00);
-    sei();
-    __LOG(LOG_LEVEL_INFO, "global interrupt enabled.\r\n");
-    __LOG(LOG_LEVEL_INFO, "Serial initialization.\r\n");
+    __LOG(LOG_LEVEL_INFO, "Serial initializated.\r\n");
 }
 
 error_t serial_send_block(const uint8_t *data, uint8_t length)

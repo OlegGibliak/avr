@@ -7,6 +7,8 @@
 
 void assert_callback(uint16_t line, const char *func_name);
 
+    // assert_callback(0, 0);
+
 #define ASSERT(expr)                    \
 if (!(expr))                            \
 {                                       \

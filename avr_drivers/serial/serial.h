@@ -2,6 +2,7 @@
 #define _SERIAL_H
 
 #include <stdbool.h>
+#include <avr/io.h>
 #include "error.h"
 
 typedef void (*serial_tx_complete_cb)(void);

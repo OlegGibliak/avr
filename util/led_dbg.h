@@ -2,6 +2,8 @@
 #define LED_DEBUG_H__
 
 #include <avr/io.h>
+#include <util/delay.h>
+
 //to do #define PORT        (B)
 #define LED_PORT            (PORTB)
 #define LED_PIN             (5)
@@ -26,6 +28,13 @@ do                                          \
     else                                    \
         LED_DEBUG_ON();                     \
 } while (0)
+#define LED_DEBUG_BLINK(_cnt)				\
+uint8_t __cnt = _cnt * 2;					\
+while(__cnt--)								\
+{											\
+	LED_DEBUG_TOOGLE();						\
+	_delay_ms(500);							\
+}
 #else /* MODULE_LED_DBG */
 #define LED_DEBUG_INIT()
 #define LED_DEBUG_ON()

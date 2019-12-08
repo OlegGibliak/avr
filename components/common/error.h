@@ -13,7 +13,8 @@ typedef enum
     ERROR_NULL_PTR,
     ERROR_INTERNAL,
     ERROR_UNKNOW_CMD,
-    ERROR_BUSY
+    ERROR_BUSY,
+    ERROR_INVALID_STATE
 } error_t;
 
 #endif /* ERROR_H_ */
