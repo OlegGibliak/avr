@@ -45,3 +45,15 @@ void logger_serial_print(uint8_t log_level, const char * format, ...)
         }
     }
 }
+
+void logger_serial_print_arr(uint8_t log_level, const char *p_str, uint8_t *p_data, uint8_t len)
+{
+    uint8_t log_buf[LOG_BUFF_SIZE];
+    int size = snprintf((char *)log_buf, sizeof(log_buf), "%s ", p_str);
+    for (uint8_t i = 0; i < len; ++i)
+    {
+        size += sprintf((char *)log_buf + size, "%02X ", p_data[i]);
+    }
+    size += sprintf((char *)log_buf + size, "\r\n");
+    serial_send_block(log_buf, size);
+}

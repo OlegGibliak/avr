@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <avr/io.h>
 
+#define SPI_ENABLED
+
 #define CSN_DDR         (DDRB)
 #define CSN_PORT        (PORTB)
 #define CSN_PIN         (2)

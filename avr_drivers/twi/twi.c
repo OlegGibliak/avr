@@ -13,6 +13,7 @@
 
 typedef enum
 {
+    TWI_STATUS_OK,
     TWI_START_TRANSMITTED      = 0x08,
     TWI_R_START_TRANSMITTED    = 0x10,
     TWI_SLA_W_TRANSMITTED_ACK  = 0x18,
@@ -66,7 +67,6 @@ static void error_handler(uint8_t status)
         default:
             break;
     }
-    LED_DEBUG_BLINK(2);
 }
 
 ISR(TWI_vect)
@@ -165,29 +165,23 @@ void twi_init(twi_scl_t f_scl, twi_tx_callback tx_cb, twi_rx_callback rx_cb)
     __LOG(LOG_LEVEL_INFO, "TWI initializated.\r\n");
 }
 
-error_t twi_initialized(void)
+uint8_t twi_initialized(void)
 {
     return m_desc.is_initialized;
 }
 
-error_t twi_send(uint8_t addr, const void* p_data, uint16_t len)
+void twi_send(uint8_t addr, const void* p_data, uint16_t len)
 {
-    // if (TWI_STATE_IDLE != m_desc.state)
-    // {
-    //     return ERROR_BUSY;
-    // }
-    // uint8_t *data = (uint8_t*)p_data;
-    // __LOG(LOG_LEVEL_INFO, "%s len: %d d: %02X %02X\r\n", __func__, len, data[0], data[1]);
+    while(m_desc.state != TWI_STATE_IDLE);
     m_desc.slave_addr = addr;
     m_desc.buff       = (uint8_t*)p_data;
     m_desc.len        = len;
     m_desc.state      = TWI_STATE_TX;
     TWI_START_CONDITION();
-    while(m_desc.state != TWI_STATE_IDLE) { _delay_ms(10);}
-    return ERROR_SUCCESS;
 }
 
-error_t twi_read(uint8_t addr, void* p_data, uint16_t len)
+#if 0
+void twi_read(uint8_t addr, void* p_data, uint16_t len)
 {
     if (TWI_STATE_IDLE != m_desc.state)
     {
@@ -200,3 +194,4 @@ error_t twi_read(uint8_t addr, void* p_data, uint16_t len)
     TWI_START_CONDITION();
     return ERROR_SUCCESS;
 }
+#endif
