@@ -9,6 +9,7 @@ typedef void (*serial_tx_complete_cb)(void);
 typedef void (*serial_rx_char_cb)(uint8_t ch);
 
 void serial_init(void);
+error_t serial_send_byte_block(uint8_t byte);
 error_t serial_send_block(const uint8_t *data, uint8_t length);
 error_t serial_send_no_block(const uint8_t *data, uint8_t length);
 bool serial_ready(void);

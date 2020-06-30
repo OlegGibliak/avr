@@ -65,7 +65,18 @@ void serial_init(void)
     UCSR0B = (1<<RXEN0) | (1<<TXEN0) | (1<<RXCIE0) | (1<<TXCIE0);
     /** Set frame format: 8data, 1stop bit */
     UCSR0C = (1<<UCSZ01) | (1<<UCSZ00);
-    __LOG(LOG_LEVEL_INFO, "Serial initializated.\r\n");
+}
+
+error_t serial_send_byte_block(uint8_t byte)
+{
+    while (!serial_ready());
+
+    m_desc.len       = 1;
+    m_desc.p_tx_buff = NULL;
+    m_desc.state     = SERIAL_STATE_TX;
+
+    UDR0 = byte;
+    return ERROR_SUCCESS;
 }
 
 error_t serial_send_block(const uint8_t *data, uint8_t length)

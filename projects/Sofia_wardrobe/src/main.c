@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "serial.h"
 #include "util.h"
 #include "led_dbg.h"
@@ -6,23 +9,27 @@
 #include "task_manager.h"
 #include "logger.h"
 
-#include <stdlib.h>
+
+static int uart_putchar(char c, FILE * stream)
+{
+    return serial_send_byte_block(c);
+}
 
 static void task_sys_led_on(void *p_param)
 {
 	LED_DEBUG_ON();
-	__LOG(LOG_LEVEL_INFO, "%s\r\n", __func__);
+	printf("%s\r\n", __func__);
 }
 
 static void task_sys_led_off(void *p_param)
 {
 	LED_DEBUG_OFF();
-	__LOG(LOG_LEVEL_INFO, "%s\r\n", __func__);
+	printf("%s\r\n", __func__);
 }
 
 static void task_draw_pixel(void *p_param)
 {
-	__LOG(LOG_LEVEL_INFO, "%s\r\n", __func__);
+	printf("%s\r\n", __func__);
 	// static uint8_t x, y;
 	// x = rand() % 128;
 	// y = rand() % 32;
@@ -31,6 +38,9 @@ static void task_draw_pixel(void *p_param)
 }
 int main()
 {
+	FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
+    stdout = &uart_str;
+
 	LED_DEBUG_INIT();
 	INTERRUPT_ENABLE();
 	serial_init();

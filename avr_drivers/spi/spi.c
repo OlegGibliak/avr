@@ -57,7 +57,6 @@ void spi_master_init(void)
     // PORTB |= (1 << DP_SS);
     /* Enable SPI, enable interrupt, Master, set clock rate fck/16 */
     SPCR = (1 << SPE)|(1 << SPIE)|(1 << MSTR)|(1 << SPR0);
-    __LOG(LOG_LEVEL_INFO, "SPI initialization.\r\n");
 }
 
 uint8_t spi_master_rw(uint8_t value)

@@ -162,7 +162,6 @@ void twi_init(twi_scl_t f_scl, twi_tx_callback tx_cb, twi_rx_callback rx_cb)
            (1 << TWIE) |                                        /* < Interrupt Enable        */
            (0 << TWEA);                                         /* < Disable acknowledge Bit */
     m_desc.is_initialized = ERROR_SUCCESS;
-    __LOG(LOG_LEVEL_INFO, "TWI initializated.\r\n");
 }
 
 uint8_t twi_initialized(void)

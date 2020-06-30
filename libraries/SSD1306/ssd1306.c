@@ -113,7 +113,6 @@ void ssd1306_init(void)
 
     SSD1306_WRITE(commandSequence, sizeof(commandSequence));
     ssd1306_update();	
-    __LOG(LOG_LEVEL_INFO, "ssd1306 initializated.\r\n");
 }
 
 void ssd1306_update(void)
@@ -166,7 +165,6 @@ void ssd1306_putc(uint8_t x, uint8_t y, char c)
     char_map_get(index, map);
     for (uint8_t i = 0; i < CHAR_WIDTH; ++i)
     {
-        __LOG(LOG_LEVEL_INFO, "%02X c:%d\r\n", map[i], index);
         mp_display_buff[(x + i) + (y / 8) * SSD1306_WIDTH] = map[i];
     }
 }
