@@ -249,6 +249,4 @@ uint8_t             nrf24_ll_read_rx_payload_size(void);
 void                nrf24_ll_read_rx_fifo(uint8_t *p_data, uint8_t size);
 nrf24_status_t      nrf24_ll_rx_fifo_flash(void);
 
-// error_t nrf24_open_pipe(nrf24_pipe_t pipe, uint8_t *p_addr, bool auto_ack, uint8_t payload_len);
-
 #endif /* NRF24_LL_H__ */
