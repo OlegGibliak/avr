@@ -85,6 +85,4 @@ void app_timer_remove(app_timer_t *p_timer);
 void app_timer_reschedule(app_timer_t *p_timer, uint32_t time_ms);
 
 void app_timer_process(void);
-
-void print_timers();
 #endif /* APP_TIMER_H__ */

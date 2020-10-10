@@ -56,6 +56,7 @@ void task_manager_init(void)
     OCR0A   = 250;
     TCCR0A  = (1 << WGM01); 				/* < Timer mode is CTC */
     TCCR0B  = (1 << CS01) | (1 << CS00);    /* < Timer prescaler is 64 */
+    /* Should be 1 ms. */
 }
 
 error_t task_create(task_func_t task_cb, void *p_param, uint16_t delay, uint16_t period)

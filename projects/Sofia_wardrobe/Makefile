@@ -6,7 +6,7 @@ MAKEFILE_DIR := $(dir $(MAKEFILE_NAME) )
 
 DEVICE     := atmega328p
 CLOCK      := 16000000
-PROGRAMMER := -carduino -P/dev/ttyUSB0
+PROGRAMMER := -c arduino -P/dev/ttyUSB0 -b57600 -D
 SRC_DIR	   := src/
 INC_DIR    := C_INCLUDE_PATH
 OBJ_DIR    := build/
@@ -14,8 +14,8 @@ SIZE       := avr-size --format=avr --mcu=$(DEVICE)
 OBJCOPY    := avr-objcopy -j .text -j .data
 #Команда запуска avrdude. Ее нужно скопировать из Arduino IDE.
 #AVRDUDE = avrdude -C/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/etc/avrdude.conf -carduino -P/dev/tty.usbserial-A600dAAQ -b19200 -D -p atmega168
-AVRDUDE = avrdude  -F -v -pm328 $(PROGRAMMER)
-
+AVRDUDE = avrdude -F -v -patmega328p $(PROGRAMMER)
+#  -v -patmega328p -carduino -P/dev/ttyUSB0 -b57600 -D -Uflash:w:/tmp/arduino_build_223875/Blink.ino.hex:i 
 MK := mkdir
 RM := rm -rf
 NO_ECHO := @

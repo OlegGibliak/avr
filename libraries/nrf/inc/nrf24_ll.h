@@ -92,6 +92,8 @@ ISR(INT0_vect)
 #define W_TX_PAYLOAD_NOACK  0x58
 #define NOP                 0xFF
 
+#define NRF24_DATA_MAX_SIZE 32
+
 typedef struct __attribute((__packed__))
 {
     union

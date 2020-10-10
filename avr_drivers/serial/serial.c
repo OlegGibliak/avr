@@ -1,9 +1,9 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "error.h"
 #include "serial.h"
-#include "logger.h"
 
 #define SERIAL_FOSC                (F_CPU) // Clock Speed
 #define SERIAL_BAUD                (9600)

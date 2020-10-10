@@ -2,7 +2,6 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 #include "spi.h"
-#include "logger.h"
 
 #define NULL 0
 

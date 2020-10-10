@@ -24,7 +24,7 @@ static void task_sys_led_on(void *p_param)
 static void task_sys_led_off(void *p_param)
 {
 	LED_DEBUG_OFF();
-	printf("%s\r\n", __func__);
+	printf("%s new\r\n", __func__);
 }
 
 static void task_draw_pixel(void *p_param)

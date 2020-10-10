@@ -1,7 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "twi.h"
-#include "logger.h"
 #include "led_dbg.h"
 
 #define TWI_READ              (1 << 0)
