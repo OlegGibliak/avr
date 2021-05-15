@@ -84,7 +84,7 @@ error_t serial_send_block(const uint8_t *data, uint8_t length)
     if (!data)        return ERROR_NULL_PTR;
     if (length == 0)  return ERROR_DATA_LENGTH;
 
-    while (!serial_ready());
+    while (!serial_ready()){};
 
     m_desc.len       = length;
     m_desc.p_tx_buff = data + 1;

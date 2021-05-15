@@ -10,7 +10,7 @@
 #define CSN_PIN         (2)
 
 typedef void (*spi_cb)(void);
-
+#include "logger.h"
 static inline void spi_select(void)
 {
     CSN_PORT &= ~(1 << CSN_PIN);
