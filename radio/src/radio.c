@@ -1,32 +1,52 @@
-#ifndef RADIO_H__
-#define RADIO_H__
 /********************************************************************
 *                         Standard headers                          *
 ********************************************************************/
+#include <stdio.h>
 #include <stdint.h>
 
 /********************************************************************
 *                           Local headers                           *
 ********************************************************************/
+#include "radio.h"
+#include "nrf24.h"
 
 /********************************************************************
 *                       Function macro defines                      *
 ********************************************************************/
-#define RADIO_STATE_IRQ
-#define RADIO_STATE_POLLING
 
 /********************************************************************
 *                             Typedefs                              *
 ********************************************************************/
-typedef enum
-{
-    RADIO_E_SUCCESS,
-    RADIO_E_NOT_CONNECTED,
-    RADIO_E_INVALID_CONFIG,
-} radio_error_t;
+
+/********************************************************************
+*                  Static global data declarations                  *
+********************************************************************/
+
+/********************************************************************
+*                     Functions implementations                     *
+********************************************************************/
 
 /********************************************************************
 *                                API                                *
 ********************************************************************/
+radio_error_t radio_init(void)
+{
+    if(nrf_is_chip_connected() == NRF_E_NOT_CONNECTED)
+    {
+        return RADIO_E_NOT_CONNECTED;
+    }
 
-#endif /* RADIO_H__ */
+    nrf_flush_tx_fifo();
+    nrf_flush_tx_fifo();
+
+    nrf_setup_t config = {.addr_size = NRF_ADDR_SIZE_5B,
+                          .retr      = NRF_AUTO_RETR_10,
+                          .delay     = 5,
+                          .channel   = 10,
+                          .crc_mode  = NRF_CRC_1B};
+    
+    if (nrf_setup(&config) != NRF_E_SUCCESS)
+    {
+        return RADIO_E_INVALID_CONFIG;
+    }
+}

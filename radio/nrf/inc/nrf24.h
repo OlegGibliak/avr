@@ -5,6 +5,7 @@
 *                         Standard headers                          *
 ********************************************************************/
 #include <stdint.h>
+#include <stdbool.h>
 
 /********************************************************************
 *                           Local headers                           *
@@ -22,6 +23,9 @@ typedef enum
     NRF_E_SUCCESS,
     NRF_E_INVALID_PARAM,
     NRF_E_NOT_CONNECTED,
+    NRF_E_INTERNAL,
+    NRF_E_INVALID_SIZE,
+    NRF_E_FIFO_FULL,
 } nrf_error_t;
 
 typedef enum
@@ -46,7 +50,53 @@ typedef enum
     NRF_RX_P3,
     NRF_RX_P4,
     NRF_RX_P5,
+    NRF_PIPE_TX
 } nrf_pipe_t;
+
+typedef enum
+{
+    NRF_ADDR_SIZE_3B = 3,
+    NRF_ADDR_SIZE_4B,
+    NRF_ADDR_SIZE_5B
+} nrf_addr_size_t;
+
+typedef enum
+{
+    NRF_AUTO_RETR_DISABLE,
+    NRF_AUTO_RETR_1,
+    NRF_AUTO_RETR_2,
+    NRF_AUTO_RETR_3,
+    NRF_AUTO_RETR_4,
+    NRF_AUTO_RETR_5,
+    NRF_AUTO_RETR_6,
+    NRF_AUTO_RETR_7,
+    NRF_AUTO_RETR_8,
+    NRF_AUTO_RETR_9,
+    NRF_AUTO_RETR_10,
+    NRF_AUTO_RETR_11,
+    NRF_AUTO_RETR_12,
+    NRF_AUTO_RETR_13,
+    NRF_AUTO_RETR_14,
+    NRF_AUTO_RETR_15
+} nrf_auto_retr_t;
+
+typedef enum
+{
+    NRF_CRC_1B,
+    NRF_CRC_2B,
+    NRF_CRC_DISABLED
+} nrf_crc_t;
+
+typedef struct
+{
+    nrf_addr_size_t addr_size;
+    nrf_auto_retr_t retr;
+    uint8_t         delay;
+    uint8_t         channel;
+    nrf_crc_t       crc_mode;
+    // nrf_tx_cb_t     tx_cb;
+    // nrf_rx_cb_t     rx_cb;
+} nrf_setup_t;
 
 typedef void (*nrf_spi_t)(uint8_t *tx, uint8_t *rx, uint8_t length);
 
@@ -62,4 +112,9 @@ nrf_addr_size_t  nrf_addr_size_get(void);
 nrf_error_t  nrf_pipe_addr_get(nrf_pipe_t pipe, uint8_t *addr);
 nrf_error_t  nrf_pipe_addr_set(nrf_pipe_t pipe, const uint8_t *addr, uint8_t addr_len);
 
+void nrf_flush_tx_fifo(void);
+void nrf_flush_rx_fifo(void);
+
+void nrf_setup(nrf_setup_t *config);
+nrf_error_t nrf_pipe_open(nrf_pipe_t pipe, uint8_t *addr);
 #endif /* NRF24_H__ */
