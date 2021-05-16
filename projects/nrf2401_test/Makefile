@@ -1,4 +1,4 @@
-PROJECT_NAME := Sofia_wardrobe
+PROJECT_NAME := nrf_test
 export C_INCLUDE_PATH = inc
 
 MAKEFILE_NAME := $(MAKEFILE_LIST)
@@ -14,7 +14,8 @@ SIZE       := avr-size --format=avr --mcu=$(DEVICE)
 OBJCOPY    := avr-objcopy -j .text -j .data
 #Команда запуска avrdude. Ее нужно скопировать из Arduino IDE.
 #AVRDUDE = avrdude -C/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/etc/avrdude.conf -carduino -P/dev/tty.usbserial-A600dAAQ -b19200 -D -p atmega168
-AVRDUDE = avrdude -F -v -patmega328p $(PROGRAMMER)
+BAUDRATE = 115200
+AVRDUDE = avrdude -F -v -patmega328p $(PROGRAMMER) -b $(BAUDRATE)
 #  -v -patmega328p -carduino -P/dev/ttyUSB0 -b57600 -D -Uflash:w:/tmp/arduino_build_223875/Blink.ino.hex:i 
 MK := mkdir
 RM := rm -rf
@@ -26,7 +27,8 @@ C_SOURCE_FILES += \
 $(abspath $(ROOT_DIR)/avr_drivers/serial/serial.c) \
 $(abspath $(ROOT_DIR)/avr_drivers/spi/spi.c) \
 $(abspath $(ROOT_DIR)/components/logger/logger.c) \
-$(abspath $(ROOT_DIR)/nrf/src/nrf24.c) \
+$(abspath $(ROOT_DIR)/radio/nrf/src/nrf24.c) \
+$(abspath $(ROOT_DIR)/radio/src/radio.c) \
 $(abspath ./main.c)\
 
 
@@ -36,7 +38,8 @@ INC_PATHS += -I$(abspath ./$(ROOT_DIR)/avr_drivers/serial)
 INC_PATHS += -I$(abspath ./$(ROOT_DIR)/avr_drivers/spi)
 INC_PATHS += -I$(abspath ./$(ROOT_DIR)/components/logger)
 INC_PATHS += -I$(abspath ./$(ROOT_DIR)/components/common)
-INC_PATHS += -I$(abspath ./$(ROOT_DIR)/nrf/inc)
+INC_PATHS += -I$(abspath ./$(ROOT_DIR)/radio/nrf/inc)
+INC_PATHS += -I$(abspath ./$(ROOT_DIR)/radio/inc)
 
 OBJECT_DIRECTORY = _build
 LISTING_DIRECTORY = $(OBJECT_DIRECTORY)
@@ -118,8 +121,7 @@ clean:
 	$(RM) $(BUILD_DIRECTORIES)
 
 flash: all
-	#$(AVRDUDE) -U flash:w:nRF24_BLE_advertizer_demo.ino.with_bootloader.standard.hex:i
 	$(AVRDUDE) -U flash:w:$(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).hex:i
 
-terminal:
+terminal: flash
 	picocom -b 9600 /dev/ttyUSB0

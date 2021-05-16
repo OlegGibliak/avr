@@ -14,6 +14,7 @@
 /********************************************************************
 *                       Function macro defines                      *
 ********************************************************************/
+#define MAX_PAYLOAD_SIZE    (32)
 
 /********************************************************************
 *                             Typedefs                              *
@@ -26,6 +27,7 @@ typedef enum
     NRF_E_INTERNAL,
     NRF_E_INVALID_SIZE,
     NRF_E_FIFO_FULL,
+    NRF_E_FIFO_EMPTY,
 } nrf_error_t;
 
 typedef enum
@@ -55,13 +57,6 @@ typedef enum
 
 typedef enum
 {
-    NRF_ADDR_SIZE_3B = 3,
-    NRF_ADDR_SIZE_4B,
-    NRF_ADDR_SIZE_5B
-} nrf_addr_size_t;
-
-typedef enum
-{
     NRF_AUTO_RETR_DISABLE,
     NRF_AUTO_RETR_1,
     NRF_AUTO_RETR_2,
@@ -86,6 +81,12 @@ typedef enum
     NRF_CRC_2B,
     NRF_CRC_DISABLED
 } nrf_crc_t;
+
+typedef enum
+{
+    NRF_MODE_PTX,
+    NRF_MODE_PRX
+} nrf_mode_t;
 
 typedef struct
 {
@@ -112,9 +113,15 @@ nrf_addr_size_t  nrf_addr_size_get(void);
 nrf_error_t  nrf_pipe_addr_get(nrf_pipe_t pipe, uint8_t *addr);
 nrf_error_t  nrf_pipe_addr_set(nrf_pipe_t pipe, const uint8_t *addr, uint8_t addr_len);
 
-void nrf_flush_tx_fifo(void);
-void nrf_flush_rx_fifo(void);
+nrf_error_t nrf_flush_tx_fifo(void);
+nrf_error_t nrf_flush_rx_fifo(void);
+nrf_error_t nrf_fifo_push(uint8_t *data, uint8_t len);
+nrf_error_t nrf_fifo_pop(uint8_t *data, uint8_t *len, nrf_pipe_t *pipe);
 
 void nrf_setup(nrf_setup_t *config);
 nrf_error_t nrf_pipe_open(nrf_pipe_t pipe, uint8_t *addr);
+void nrf_addr_get(nrf_pipe_t pipe, uint8_t *addr, uint8_t *addr_size);
+void nrf_mode_set(nrf_mode_t mode);
+void nrf_status_clear(nrf_status_t flags);
+void nrf_observe_tx(uint8_t *retr_cnt, uint8_t *lost_cnt);
 #endif /* NRF24_H__ */

@@ -27,7 +27,11 @@ typedef struct
 
 static volatile serial_descriptor_t m_desc;
 
+#if defined(__AVR_ATmega2560__)
+ISR(USART0_RX_vect)
+#elif defined(__AVR_ATmega328P__)
 ISR(USART_RX_vect)
+#endif
 {
     m_desc.state = SERIAL_STATE_RX;
     uint8_t ch = UDR0;
@@ -38,7 +42,11 @@ ISR(USART_RX_vect)
     m_desc.state = SERIAL_STATE_IDLE;
 }
 
+#if defined(__AVR_ATmega2560__)
+ISR(USART0_TX_vect)
+#elif defined(__AVR_ATmega328P__)
 ISR(USART_TX_vect)
+#endif
 {
     if (--m_desc.len)
     {

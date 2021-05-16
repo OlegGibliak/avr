@@ -42,6 +42,7 @@ typedef enum
     NRF_REG_SETUP_RETR  = 0x04,
     NRF_REG_RF_CH       = 0x05,
     NRF_REG_STATUS      = 0x07,
+    NRF_REG_OBSERVE_TX  = 0x08,
     NRF_REG_RX_ADDR_P0  = 0x0A,
     NRF_REG_RX_ADDR_P1,
     NRF_REG_RX_ADDR_P2,
@@ -87,6 +88,33 @@ typedef struct
                           * TX_REUSE is set by the SPI command REUSE_TX_PL, and is reset by the SPI commands W_TX_PAYLOAD or FLUSH TX.*/
     uint8_t _rfu2    :1;
 } nrf_fifo_info_t;
+
+typedef struct
+{
+    uint8_t en_dyn_ack :1; /*< Enables the W_TX_PAYLOAD_NOACK command.*/
+    uint8_t en_ack_pay :1; /*< Enables Payload with ACK.*/
+    uint8_t en_dpl     :1; /*< Enables Dynamic Payload Length.*/
+    uint8_t _rfu       :5; /*< Reserved.*/
+} nrf_feature_t;
+
+typedef struct
+{                      /*< Enable dynamic payload length.*/
+    uint8_t dpl_p0 :1;
+    uint8_t dpl_p1 :1;
+    uint8_t dpl_p2 :1;
+    uint8_t dpl_p3 :1;
+    uint8_t dpl_p4 :1;
+    uint8_t dpl_p5 :1;
+    uint8_t _rfu   :2;
+} nrf_dynpl_t;
+
+typedef struct
+{
+    uint8_t arc_cnt  :4; /*< Count retransmitted packets. The counter is reset when 
+                          *  transmission of a new packet starts.*/
+    uint8_t plos_cnt :4; /*< Count lost packets. The counter is overflow protected to 15,
+                          *  and discontinues at max until reset. The counter is reset by writing to RF_CH.*/
+} observe_tx_t;
 
 /********************************************************************
 *                  Static global data declarations                  *
@@ -251,16 +279,37 @@ void nrf_setup(nrf_setup_t *config)
     reg_write(NRF_REG_RF_CH, config->channel);
 
     reg_write(NRF_REG_SETUP_AW, config->addr_size);
+
+    nrf_feature_t feature = {.en_dpl = 1};
+    reg_write_bytes(NRF_REG_FEATURE, (uint8_t *)&feature, 1);
 }
 
-void nrf_flush_tx_fifo(void)
+nrf_error_t nrf_flush_tx_fifo(void)
 {
     reg_write_bytes(NRF_CMD_FLUSH_TX, NULL, 0);
+
+    uint8_t reg = reg_read(NRF_REG_FIFO_STATUS);
+    nrf_fifo_info_t *fifo = (nrf_fifo_info_t *)&reg;
+    
+    if (fifo->tx_full || !fifo->tx_empty)
+    {
+        return NRF_E_FIFO_FULL;
+    }
+    return NRF_E_SUCCESS;
 }
 
-void nrf_flush_rx_fifo(void)
+nrf_error_t nrf_flush_rx_fifo(void)
 {
     reg_write_bytes(NRF_CMD_FLUSH_RX, NULL, 0);
+
+    uint8_t reg = reg_read(NRF_REG_FIFO_STATUS);
+    nrf_fifo_info_t *fifo = (nrf_fifo_info_t *)&reg;
+
+    if (fifo->rx_full || !fifo->rx_empty)
+    {
+        return NRF_E_FIFO_FULL;
+    }
+    return NRF_E_SUCCESS;
 }
 
 nrf_error_t nrf_fifo_push(uint8_t *data, uint8_t len)
@@ -282,7 +331,7 @@ nrf_error_t nrf_fifo_push(uint8_t *data, uint8_t len)
     return (fifo->tx_empty) ? NRF_E_INTERNAL : NRF_E_SUCCESS;
 }
 
-nrf_error_t nrf_fifo_pop(uint8_t *data, uint8_t *len)
+nrf_error_t nrf_fifo_pop(uint8_t *data, uint8_t *len, nrf_pipe_t *pipe)
 {
     uint8_t reg = reg_read(NRF_REG_FIFO_STATUS);
     nrf_fifo_info_t *fifo = (nrf_fifo_info_t *)&reg;
@@ -292,13 +341,18 @@ nrf_error_t nrf_fifo_pop(uint8_t *data, uint8_t *len)
     }
 
     uint8_t pl_size = reg_read(NRF_CMD_R_RX_PL_WID);
-    if (pl_size =0 || pl_size > MAX_PAYLOAD_SIZE)
+    if (pl_size == 0)
     {
-        return NRF_E_INTERNAL;
+        return NRF_E_INVALID_SIZE;
     }
 
+    uint8_t status = reg_read(NRF_REG_STATUS);
+    *pipe = (status >> 1) & 0x07;
+    
     reg_read_bytes(NRF_CMD_R_RX_PAYLOAD, data, pl_size);
     *len = pl_size;
+
+    return NRF_E_SUCCESS;
 }
 
 nrf_error_t nrf_pipe_open(nrf_pipe_t pipe, uint8_t *addr)
@@ -333,6 +387,12 @@ nrf_error_t nrf_pipe_open(nrf_pipe_t pipe, uint8_t *addr)
 
         uint8_t en_rx_addr = (1 << pipe);
         reg_write(NRF_REG_EN_RX_ADDR, en_rx_addr);
+
+        uint8_t dynpl = (1 << pipe);
+        reg_write_bytes(NRF_REG_DYNPD, &dynpl, 1);
+
+        uint8_t en_aa = (1 << pipe);
+        reg_write_bytes(NRF_REG_EN_AA, &en_aa, 1);
     }
     else
     {
@@ -340,4 +400,43 @@ nrf_error_t nrf_pipe_open(nrf_pipe_t pipe, uint8_t *addr)
     }
     
     return NRF_E_SUCCESS;
+}
+
+void nrf_addr_get(nrf_pipe_t pipe, uint8_t *addr, uint8_t *addr_size)
+{
+    if (pipe == NRF_RX_P0 ||
+        pipe == NRF_RX_P1 ||
+        pipe == NRF_PIPE_TX)
+    {
+        *addr_size = reg_read(NRF_REG_SETUP_AW) + 2;
+    }
+    else
+    {
+        *addr_size = 1;
+    }
+    
+    reg_read_bytes(NRF_REG_RX_ADDR_P0 + pipe, addr, *addr_size);
+}
+
+void nrf_mode_set(nrf_mode_t mode)
+{
+    config_reg_t config;
+    reg_read_bytes(NRF_REG_CONFIG, (uint8_t *)&config, 1);
+
+    config.prim_rx = mode;
+    reg_write_bytes(NRF_REG_CONFIG, (uint8_t *)&config, 1);
+}
+
+void nrf_status_clear(nrf_status_t flags)
+{
+    reg_write(NRF_REG_STATUS, flags); 
+}
+
+void nrf_observe_tx(uint8_t *retr_cnt, uint8_t *lost_cnt)
+{
+    uint8_t reg = reg_read(NRF_REG_OBSERVE_TX);
+    observe_tx_t *observe = (observe_tx_t *)&reg;
+
+    *retr_cnt = observe->arc_cnt;
+    *lost_cnt = observe->plos_cnt;
 }
