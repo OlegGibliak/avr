@@ -22,6 +22,7 @@ typedef struct
 {
     bool           initialized;
     spi_transfer_t spi;
+    uint8_t        rf_channel;
 } nrf_ctx_t;
 
 typedef struct __attribute__((packed))
@@ -96,7 +97,7 @@ static nrf_ctx_t g_ctx;
 void read(nrf_reg_t reg, uint8_t *data, uint8_t len)
 {
     uint8_t tx_buff[len + REG_SIZE];
-    tx_buff[0] = reg;
+    tx_buff[0] = reg | NRF_CMD_R_REGISTER;;
 
     g_ctx.spi(tx_buff, data, len + REG_SIZE);
 }
@@ -104,7 +105,7 @@ void read(nrf_reg_t reg, uint8_t *data, uint8_t len)
 void write(nrf_reg_t reg, uint8_t *data, uint8_t len)
 {
     uint8_t tx_buff[len + REG_SIZE];
-    tx_buff[0] = reg;
+    tx_buff[0] = reg | NRF_CMD_W_REGISTER;;
 
     for (uint8_t i = 0; i < len; i++)
     {
@@ -134,6 +135,8 @@ nrf_error_t nrf_init(nrf_dscr_t *dscr, spi_transfer_t spi_transfer)
         return NRF_E_NOT_CONNECTED;
     }
 
+    read(NRF_REG_RF_CH, &g_ctx.rf_channel, sizeof(g_ctx.rf_channel));
+    g_ctx.initialized = true;
     return NRF_E_SUCCESS;
 }
 
@@ -289,7 +292,8 @@ nrf_error_t nrf_rf_setup(uint8_t channel, nrf_data_rate_t rate, nrf_output_power
     }
 
     write(NRF_REG_RF_CH, &channel, sizeof(channel));
-
+    g_ctx.rf_channel = channel;
+    
     uint8_t rf_setup = (power << 1) | (rate << 3);
     write(NRF_REG_RF_SETUP, &rf_setup, sizeof(rf_setup));
 
@@ -309,4 +313,117 @@ void nrf_flag_clear(uint8_t flags)
 
     status &= ~(flags);
     write(NRF_REG_STATUS, &status, sizeof(status));
+}
+
+nrf_error_t nrf_addr_set(nrf_pipe_t pipe, uint8_t *addr)
+{
+    uint8_t addr_size;
+    read(NRF_REG_SETUP_AW, &addr_size, sizeof(addr_size));
+
+    if (addr_size < ADDR_SIZE_3B || addr_size > ADDR_SIZE_5B)
+    {
+        return NRF_E_INTERNAL;
+    }
+
+    write(NRF_REG_RX_ADDR_P0 + pipe, addr, addr_size);
+
+    return NRF_E_SUCCESS;
+}
+
+nrf_error_t nrf_payload_size(nrf_pipe_t pipe, uint8_t size)
+{
+    if (size > MAX_PAYLOAD_SIZE)
+    {
+        return NRF_E_INVALID_PARAM;
+    }
+
+    write(NRF_REG_PAYLOAD_SIZE_P0 + pipe, &size, size);
+
+    return NRF_E_SUCCESS;
+}
+
+uint8_t nrf_lost_packets_cnt(void)
+{
+    uint8_t lost;
+    read(NRF_REG_OBSERVE_TX, &lost, sizeof(lost));
+
+    /* Clear lost packets counter. */ 
+    write(NRF_REG_RF_CH, &g_ctx.rf_channel, sizeof(g_ctx.rf_channel));
+
+    return lost >> 4;
+}
+
+uint8_t nrf_retr_cnt(void)
+{
+    uint8_t retr;
+    read(NRF_REG_OBSERVE_TX, &retr, sizeof(retr));
+    return retr & 0x0F;
+}
+
+uint8_t nrf_fifo_status(void)
+{
+    uint8_t status;
+    read(NRF_REG_FIFO_STATUS, &status, sizeof(status));
+    return status;
+}
+
+void nnrf_fifo_flush_rx(void)
+{
+    uint8_t cmd = NRF_CMD_FLUSH_TX;
+    g_ctx.spi(&cmd, NULL, sizeof(cmd));
+}
+
+void nrf_fifo_flush_tx(void)
+{
+    uint8_t cmd = NRF_CMD_FLUSH_RX;
+    g_ctx.spi(&cmd, NULL, sizeof(cmd));
+}
+
+nrf_error_t nrf_dynamic_payload(nrf_pipe_t pipe, bool enable)
+{
+    if (pipe >= NRF_PIPE_TX)
+    {
+        return NRF_E_INVALID_PARAM;
+    }
+
+    uint8_t dp;
+    read(NRF_REG_DYNPD, &dp, sizeof(dp));
+
+    if (enable)
+    {
+        dp |= (1 << pipe);
+    }
+    else
+    {
+        dp &= ~(1 << pipe);
+    }
+
+    write(NRF_REG_DYNPD, &dp, sizeof(dp));
+
+    return NRF_E_SUCCESS;
+}
+
+void nrf_feature(bool dpl, bool ack_pay, bool dyn_ack)
+{
+    uint8_t feature;
+    read(NRF_REG_FEATURE, &feature, sizeof(feature));
+
+    feature_t *p_feature = (feature_t *)&feature;
+
+    if (dpl)
+    {
+        p_feature->en_dpl = 1;
+    }
+
+    if (ack_pay)
+    {
+        p_feature->en_ack_pay = 1;
+    }
+
+    if (dyn_ack)
+    {
+        p_feature->en_dyn_ack = 1;
+    }
+
+    write(NRF_REG_FEATURE, &feature, sizeof(feature));
 }

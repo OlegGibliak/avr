@@ -10,18 +10,22 @@
 /********************************************************************
 *                           Local headers                           *
 ********************************************************************/
-#include "nrf24.h"
 
 /********************************************************************
 *                       Function macro defines                      *
 ********************************************************************/
 #define MAX_PAYLOAD_SIZE    (32)
 
-#define NRF_STATUS_IDLE     (0 << 0)
-#define NRF_STATUS_RX_DR    (1 << 6)
-#define NRF_STATUS_TX_DS    (1 << 5)
-#define NRF_STATUS_MAX_RT   (1 << 4)
-#define NRF_STATUS_TX_FULL  (1 << 0)
+#define NRF_STATUS_RX_DR    	 (1 << 6)
+#define NRF_STATUS_TX_DS    	 (1 << 5)
+#define NRF_STATUS_MAX_RT   	 (1 << 4)
+#define NRF_STATUS_TX_FULL  	 (1 << 0)
+
+#define NRF_FIFO_STATUS_TX_REUSE (1 << 6)
+#define NRF_FIFO_STATUS_TX_FULL  (1 << 5)
+#define NRF_FIFO_STATUS_TX_EMPTY (1 << 4)
+#define NRF_FIFO_STATUS_RX_FULL  (1 << 1)
+#define NRF_FIFO_STATUS_RX_EMPTY (1 << 0)
 
 /********************************************************************
 *                             Typedefs                              *
@@ -30,6 +34,7 @@ typedef enum
 {
     NRF_E_SUCCESS,
     NRF_E_INVALID_PARAM,
+    NRF_E_INTERNAL,
     NRF_E_NO_MEM,
     NRF_E_ALREADY_INITIALIZED,
     NRF_E_NOT_CONNECTED,
@@ -67,6 +72,12 @@ typedef enum
     NRF_REG_RX_ADDR_P4,
     NRF_REG_RX_ADDR_P5,
     NRF_REG_TX_ADDR     = 0x10,
+    NRF_REG_PAYLOAD_SIZE_P0,
+    NRF_REG_PAYLOAD_SIZE_P1,
+    NRF_REG_PAYLOAD_SIZE_P2,
+    NRF_REG_PAYLOAD_SIZE_P3,
+    NRF_REG_PAYLOAD_SIZE_P4,
+    NRF_REG_PAYLOAD_SIZE_P5,
     NRF_REG_FIFO_STATUS = 0x17,
     NRF_REG_DYNPD       = 0x1C,
     NRF_REG_FEATURE     = 0x1D
