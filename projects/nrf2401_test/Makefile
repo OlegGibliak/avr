@@ -123,5 +123,5 @@ clean:
 flash: all
 	$(AVRDUDE) -U flash:w:$(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).hex:i
 
-terminal: flash
+terminal:
 	picocom -b 9600 /dev/ttyUSB0

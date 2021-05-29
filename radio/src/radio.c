@@ -176,8 +176,8 @@ void radio_proccess(void)
         }
         else
         {
-            __LOG(LOG_LEVEL_DEBUG, "Received packet pipe %u\r\n", pipe);
-            __LOG_XB(LOG_LEVEL_DEBUG, "PKT:", pkt, pkt_size);
+            pkt[pkt_size] = '\0';
+            __LOG(LOG_LEVEL_DEBUG, "%s\r\n", (char *)pkt);
         }
         nrf_status_clear(NRF_STATUS_RX_DR);
     }
