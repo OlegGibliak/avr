@@ -4,9 +4,11 @@ export C_INCLUDE_PATH = inc
 MAKEFILE_NAME := $(MAKEFILE_LIST)
 MAKEFILE_DIR := $(dir $(MAKEFILE_NAME) )
 
+PORT       := /dev/ttyUSB1
+
 DEVICE     := atmega328p
 CLOCK      := 16000000
-PROGRAMMER := -c arduino -P/dev/ttyUSB0	 -D
+PROGRAMMER := -c arduino -P$(PORT)	 -D
 SRC_DIR	   := src/
 INC_DIR    := C_INCLUDE_PATH
 OBJ_DIR    := build/
@@ -27,8 +29,10 @@ C_SOURCE_FILES += \
 $(abspath $(ROOT_DIR)/avr_drivers/serial/serial.c) \
 $(abspath $(ROOT_DIR)/avr_drivers/spi/spi.c) \
 $(abspath $(ROOT_DIR)/components/logger/logger.c) \
-$(abspath $(ROOT_DIR)/radio/nrf/src/nrf24.c) \
-$(abspath $(ROOT_DIR)/radio/src/radio.c) \
+$(abspath $(ROOT_DIR)/components/timer_timestamp/src/timer_timestamp.c) \
+$(abspath $(ROOT_DIR)/components/app_timer/src/app_timer.c) \
+$(abspath $(ROOT_DIR)/radio/nrf2401/nrf2401.c) \
+$(abspath $(ROOT_DIR)/radio/nrf2401/radio.c) \
 $(abspath ./main.c)\
 
 
@@ -38,8 +42,9 @@ INC_PATHS += -I$(abspath ./$(ROOT_DIR)/avr_drivers/serial)
 INC_PATHS += -I$(abspath ./$(ROOT_DIR)/avr_drivers/spi)
 INC_PATHS += -I$(abspath ./$(ROOT_DIR)/components/logger)
 INC_PATHS += -I$(abspath ./$(ROOT_DIR)/components/common)
-INC_PATHS += -I$(abspath ./$(ROOT_DIR)/radio/nrf/inc)
-INC_PATHS += -I$(abspath ./$(ROOT_DIR)/radio/inc)
+INC_PATHS += -I$(abspath ./$(ROOT_DIR)/components/timer_timestamp/inc)
+INC_PATHS += -I$(abspath ./$(ROOT_DIR)/components/app_timer/inc)
+INC_PATHS += -I$(abspath ./$(ROOT_DIR)/radio/nrf2401)
 
 OBJECT_DIRECTORY = _build
 LISTING_DIRECTORY = $(OBJECT_DIRECTORY)
@@ -123,5 +128,5 @@ clean:
 flash: all
 	$(AVRDUDE) -U flash:w:$(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME).hex:i
 
-terminal:
-	picocom -b 9600 /dev/ttyUSB0
+terminal: flash
+	picocom -b 9600 $(PORT)

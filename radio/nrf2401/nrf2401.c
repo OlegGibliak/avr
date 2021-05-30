@@ -68,17 +68,6 @@ typedef struct
 } feature_t;
 
 typedef struct
-{                      /*< Enable dynamic payload length.*/
-    uint8_t dpl_p0 :1;
-    uint8_t dpl_p1 :1;
-    uint8_t dpl_p2 :1;
-    uint8_t dpl_p3 :1;
-    uint8_t dpl_p4 :1;
-    uint8_t dpl_p5 :1;
-    uint8_t _rfu   :2;
-} dynpl_t;
-
-typedef struct
 {
     uint8_t arc_cnt  :4; /*< Count retransmitted packets. The counter is reset when 
                           *  transmission of a new packet starts.*/
@@ -89,7 +78,7 @@ typedef struct
 /********************************************************************
 *                  Static global data declarations                  *
 ********************************************************************/
-static nrf_ctx_t g_ctx;
+static nrf_ctx_t g_ctx = {.initialized = false};
 
 /********************************************************************
 *                     Functions implementations                     *
@@ -99,7 +88,13 @@ void read(nrf_reg_t reg, uint8_t *data, uint8_t len)
     uint8_t tx_buff[len + REG_SIZE];
     tx_buff[0] = reg | NRF_CMD_R_REGISTER;;
 
-    g_ctx.spi(tx_buff, data, len + REG_SIZE);
+    uint8_t rx_buf[len + REG_SIZE];
+
+    g_ctx.spi(tx_buff, rx_buf, len + REG_SIZE);
+    for (uint8_t i = 0; i < len; ++i)
+    {
+        data[i] = rx_buf[i + 1];
+    }
 }
 
 void write(nrf_reg_t reg, uint8_t *data, uint8_t len)
@@ -118,7 +113,8 @@ void write(nrf_reg_t reg, uint8_t *data, uint8_t len)
 /********************************************************************
 *                                API                                *
 ********************************************************************/
-nrf_error_t nrf_init(nrf_dscr_t *dscr, spi_transfer_t spi_transfer)
+#include "logger.h"
+nrf_error_t nrf_init(spi_transfer_t spi_transfer)
 {
     if (g_ctx.initialized == true)
     {
@@ -129,6 +125,9 @@ nrf_error_t nrf_init(nrf_dscr_t *dscr, spi_transfer_t spi_transfer)
 
     uint8_t setup_aw;
     read(NRF_REG_SETUP_AW, &setup_aw, sizeof(setup_aw));
+
+    uint8_t sts = nrf_status_get();
+    __LOG(LOG_LEVEL_DEBUG, "sts %02X aw %02X\r\n", sts, setup_aw);
 
     if (setup_aw < ADDR_SIZE_3B || setup_aw > ADDR_SIZE_5B)
     {
@@ -252,7 +251,7 @@ nrf_error_t nrf_rx_pipe(nrf_pipe_t pipe, bool enable, bool ack)
         en_rx &= ~(1 << pipe);
     }
 
-    write(NRF_REG_EN_AA, &en_rx, sizeof(en_rx));
+    write(NRF_REG_EN_RX_ADDR, &en_rx, sizeof(en_rx));
     
     return NRF_E_SUCCESS;
 }
@@ -294,7 +293,7 @@ nrf_error_t nrf_rf_setup(uint8_t channel, nrf_data_rate_t rate, nrf_output_power
     write(NRF_REG_RF_CH, &channel, sizeof(channel));
     g_ctx.rf_channel = channel;
     
-    uint8_t rf_setup = (power << 1) | (rate << 3);
+    uint8_t rf_setup = (power << 1) | (rate << 3) | (1 << 0);
     write(NRF_REG_RF_SETUP, &rf_setup, sizeof(rf_setup));
 
     return NRF_E_SUCCESS;
@@ -304,28 +303,71 @@ uint8_t nrf_status_get(void)
 {
     uint8_t status;
     read(NRF_REG_STATUS, &status, sizeof(status));
+
+    return status;
 }
 
 void nrf_flag_clear(uint8_t flags)
 {
-    uint8_t status;
-    read(NRF_REG_STATUS, &status, sizeof(status));
-
-    status &= ~(flags);
-    write(NRF_REG_STATUS, &status, sizeof(status));
+   write(NRF_REG_STATUS, &flags, sizeof(flags));
 }
 
 nrf_error_t nrf_addr_set(nrf_pipe_t pipe, uint8_t *addr)
 {
     uint8_t addr_size;
-    read(NRF_REG_SETUP_AW, &addr_size, sizeof(addr_size));
-
-    if (addr_size < ADDR_SIZE_3B || addr_size > ADDR_SIZE_5B)
+    
+    if (pipe > NRF_PIPE_1 && pipe < NRF_PIPE_TX)
     {
-        return NRF_E_INTERNAL;
+        addr_size = 1;
+    }
+    else
+    {
+        read(NRF_REG_SETUP_AW, &addr_size, sizeof(addr_size));
+
+        if (addr_size < ADDR_SIZE_3B || addr_size > ADDR_SIZE_5B)
+        {
+            return NRF_E_INTERNAL;
+        }
+
+        addr_size += 2;
     }
 
     write(NRF_REG_RX_ADDR_P0 + pipe, addr, addr_size);
+    
+    return NRF_E_SUCCESS;
+}
+
+nrf_error_t nrf_addr_get(nrf_pipe_t pipe, uint8_t *addr)
+{
+    uint8_t addr_size;
+    switch (pipe)
+    {
+        case NRF_PIPE_2:
+        case NRF_PIPE_3:
+        case NRF_PIPE_4:
+        case NRF_PIPE_5:
+        {
+            addr_size = 1;
+            break;
+        }
+        case NRF_PIPE_0:
+        case NRF_PIPE_1:
+        case NRF_PIPE_TX:
+        {
+            read(NRF_REG_SETUP_AW, &addr_size, sizeof(addr_size));
+            if (addr_size < ADDR_SIZE_3B || addr_size > ADDR_SIZE_5B)
+            {
+                return NRF_E_INTERNAL;
+            }
+
+            addr_size += 2;
+            break;
+        }
+        default:
+            return NRF_E_INVALID_PARAM;
+    }
+
+    read(NRF_REG_RX_ADDR_P0 + pipe, addr, addr_size);
 
     return NRF_E_SUCCESS;
 }
@@ -367,16 +409,72 @@ uint8_t nrf_fifo_status(void)
     return status;
 }
 
-void nnrf_fifo_flush_rx(void)
+void nrf_fifo_flush_rx(void)
 {
-    uint8_t cmd = NRF_CMD_FLUSH_TX;
+    uint8_t cmd = NRF_CMD_FLUSH_RX;
     g_ctx.spi(&cmd, NULL, sizeof(cmd));
 }
 
 void nrf_fifo_flush_tx(void)
 {
-    uint8_t cmd = NRF_CMD_FLUSH_RX;
+    uint8_t cmd = NRF_CMD_FLUSH_TX;
     g_ctx.spi(&cmd, NULL, sizeof(cmd));
+}
+
+nrf_error_t nrf_fifo_push(uint8_t *data, uint8_t len)
+{
+    if (len > MAX_PAYLOAD_SIZE)
+    {
+        return NRF_E_INVALID_DATA_SIZE;
+    }
+
+    uint8_t fifo = nrf_fifo_status();
+    if (fifo & NRF_FIFO_STATUS_TX_FULL)
+    {
+        return NRF_E_FIFO_FULL;
+    }
+
+    uint8_t cmd = NRF_CMD_W_TX_PAYLOAD;
+    uint8_t buff[sizeof(cmd) + len];
+    buff[0] = cmd;
+    for (uint8_t i = 0; i < len; i++)
+    {
+        buff[i + 1] = data[i];
+    }
+    
+    g_ctx.spi(buff, NULL, sizeof(cmd) + len);
+
+    return NRF_E_SUCCESS;
+}
+
+nrf_error_t nrf_fifo_pop(uint8_t *data, uint8_t *len, nrf_pipe_t *pipe)
+{
+    uint8_t fifo = nrf_fifo_status();
+    if (fifo & NRF_FIFO_STATUS_RX_EMPTY)
+    {
+        return NRF_E_FIFO_EMPTY;
+    }
+
+    uint8_t status;
+    read(NRF_REG_STATUS, &status, sizeof(status));
+    *pipe = (status & 0x0F) >> 1;
+
+    uint8_t pl_len = 0;
+    read(NRF_CMD_R_RX_PL_WID, &pl_len, sizeof(pl_len));
+
+    uint8_t cmd = NRF_CMD_R_RX_PAYLOAD;
+    uint8_t buff[sizeof(cmd) + pl_len];
+    buff[0] = cmd;
+
+    g_ctx.spi(buff, buff, sizeof(cmd) + pl_len);
+    *len = pl_len;
+
+    for (uint8_t i = 0; i < pl_len; ++i)
+    {
+        data[i] = buff[i + 1];
+    }
+
+    return NRF_E_SUCCESS;
 }
 
 nrf_error_t nrf_dynamic_payload(nrf_pipe_t pipe, bool enable)
@@ -400,6 +498,8 @@ nrf_error_t nrf_dynamic_payload(nrf_pipe_t pipe, bool enable)
 
     write(NRF_REG_DYNPD, &dp, sizeof(dp));
 
+    // uint8_t tx[] = {NRF_CMD_ACTIVATE, 0x73};
+    // g_ctx.spi(tx, NULL, 2);
     return NRF_E_SUCCESS;
 }
 
@@ -426,4 +526,11 @@ void nrf_feature(bool dpl, bool ack_pay, bool dyn_ack)
     }
 
     write(NRF_REG_FEATURE, &feature, sizeof(feature));
+}
+
+uint8_t nrf_read_reg(nrf_reg_t reg)
+{
+    uint8_t value = 0;
+    read(reg, &value, sizeof(value));
+    return value;
 }
